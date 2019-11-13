@@ -20,9 +20,9 @@ class DatabaseSync(SubscribeListener):
 	def doSomething():
 		#Saves the dictionary list
 		f= open("BorrowerLoanRequest","w+")
-		f.write("BorrowerID,LoanAmount,IntRate\n")
+		f.write("BorrowerID,LoanAmount,IntRate,year\n")
 		for keys,value in borrowerDict.items():
-			f.write("{},{},{}\n".format(keys,value[0],value[1]))
+			f.write("{},{},{},{}\n".format(keys,value[0],value[1],value[2]))
 		f.close()
 
 	def addToList(self):
@@ -59,7 +59,28 @@ class DatabaseSync(SubscribeListener):
 		DatabaseSync.checkStatus(data.message)
 		DatabaseSync.addToList(self)
 
+def getConstraints():
+	print("Welcome broker, please set your constraints for the loan application.")
+	loanConstraint = int(input("Loan constraint (Maximum a borrower can take out): "))
+	yearConstraint = int(input("Year constraint (Maimum year to pay off loan): "))
+	intRConstraint = int(input("Interest rate constraint (Maximum interest rate): "))
+	return [loanConstraint,yearConstraint,intRConstraint]
 
+def publishConstraints(constraints):
+	pubnub.publish().channel("Demo.1").message("Welcome to our loan application").pn_async(show)
+	time.sleep(1)
+	pubnub.publish().channel("Demo.1").message("The following are constraints for this auction:").pn_async(show)
+	time.sleep(1)
+	pubnub.publish().channel("Demo.1").message("Please note the following constraints are the maximum limits").pn_async(show)
+	time.sleep(1)
+	pubnub.publish().channel("Demo.1").message("Loan constraints Year constraints Interest rate constraints").pn_async(show)
+	time.sleep(1)
+	pubnub.publish().channel("Demo.1").message("{} {} {}".format(constraints[0],constraints[1],constraints[2])).pn_async(show)
+	time.sleep(1)
+	pubnub.publish().channel("Demo.1").message("End").pn_async(show)
+
+constraints = getConstraints()
+publishConstraints(constraints)
 
 sync = DatabaseSync()
 pubnub.add_listener(sync)

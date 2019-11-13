@@ -3,6 +3,7 @@ import time
 from pubnub.pnconfiguration import PNConfiguration
 from pubnub.pubnub import PubNub, SubscribeListener
 
+messages = []
 name = input("Greetings, enter your ID: ")
 
 pnconfig = PNConfiguration()
@@ -14,9 +15,48 @@ pubnub = PubNub(pnconfig)
 
 class DatabaseSync(SubscribeListener):
 	Data = None
+	count = 0
+
+	def goAhead():
+	#iteration = int(input("How many bet request do you want? "))
+		constraints = messages[-1].split()
+		iteration = 3
+		for i in range(iteration):
+			amount = int(input("Enter loan amount: "))
+			#for i in messages[-1]:
+				#print(i)
+			while( (amount > int(constraints[0])) or (amount < 1)):
+				print("Amount invalid")
+				amount = int(input("Enter loan amount: "))
+
+			interestRate = int(input("Enter desired interest rate: "))
+
+			while((interestRate > int(constraints[1])) or (interestRate < 1)):
+				print("Interest rate invalid")
+				interestRate = int(input("Enter desired interest rate: "))
+
+			year = int(input("Enter loan repay period in years: "))
+			while((year > int(constraints[2])) or (year < 1)):
+				print("Repay period in years invalid")
+				year = int(input("Enter loan repay period in years: "))
+
+			print("End of request\n")
+			requestLoans.append([pnconfig.uuid,amount,interestRate,year])
+			pubnub.publish().channel("Demo.2").message([requestLoans[i][0],requestLoans[i][1],requestLoans[i][2],requestLoans[i][3]]).pn_async(show)
+		#End of Subscriber action
+		pubnub.publish().channel("Demo.2").message("End").pn_async(show)
+
+	def checkGoAhead(message):
+		if "End" in message:
+			DatabaseSync.goAhead()
+		else:
+			print(message)
+			global messages
+			messages.append(message)
+
 	def message(self, pubnub, data):
 		self.Data = data
-		print(data.message)
+		DatabaseSync.checkGoAhead(data.message)
 
 #Shows message and status
 def show(msg, stat):
@@ -28,12 +68,3 @@ pubnub.add_listener(sync)
 pubnub.subscribe().channels("Demo.1").execute()
 
 requestLoans = []
-
-iteration = int(input("How many bet request do you want? "))
-for i in range(iteration):
-	amount = int(input("Enter loan amount: "))
-	interestRate = int(input("Enter desired interest rate: "))
-	requestLoans.append([pnconfig.uuid,amount,interestRate])
-	pubnub.publish().channel("Demo.2").message([requestLoans[i][0],requestLoans[i][1],requestLoans[i][2]]).pn_async(show)
-#End of Subscriber action
-pubnub.publish().channel("Demo.2").message("End").pn_async(show)

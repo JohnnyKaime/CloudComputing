@@ -19,6 +19,20 @@ def show(msg, stat):
 class DatabaseSync(SubscribeListener):
 	Data = None
 
+	def returnBorrower():
+		flag = True
+		tiredArray = []
+		for i in kArray:
+			if flag:
+				print("Broker will yield {} amount after borrower repay".format(i))
+				flag = False
+			else:
+				for j in i:
+					tiredArray.append([finalLoanRequest[j][0],borrowerDict[finalLoanRequest[j][0]][finalLoanRequest[j][1]]])
+					
+		pubnub.publish().channel("Demo.1").message("Final").pn_async(show)
+		pubnub.publish().channel("Demo.1").message(tiredArray).pn_async(show)
+
 	def knapSacking():
 		#creating neccessary variables
 		weight = []
@@ -30,7 +44,8 @@ class DatabaseSync(SubscribeListener):
 			value.append(borrower[2])
 		
 		print("Knapsack solution returns:")
-		print(knapsack.knapsack(size, weight).solve(capacity))
+		global kArray
+		kArray = knapsack.knapsack(weight, value).solve(capacity)
 
 	def sortLoan():
 		global finalLoanRequest
@@ -49,15 +64,6 @@ class DatabaseSync(SubscribeListener):
 					cleanLoanRequest[key] = [valueSI]
 				else:
 					cleanLoanRequest[key].append(valueSI)
-
-	def doSomething():
-		#Saves the dictionary list
-		f= open("BorrowerLoanRequest","w+")
-		f.write("BorrowerID,LoanAmount,IntRate,year\n")
-		f.write("constraints,{},{},{}\n".format(listOfConstraints[0],listOfConstraints[1],listOfConstraints[2]))
-		for keys,value in borrowerDict.items():
-			f.write("{},{},{},{}\n".format(keys,value[0],value[1],value[2]))
-		f.close()
 
 	def addToList(self):
 		global borrowerDict
@@ -82,6 +88,7 @@ class DatabaseSync(SubscribeListener):
 				DatabaseSync.cleanLoanRequest()
 				DatabaseSync.sortLoan()
 				DatabaseSync.knapSacking()
+				DatabaseSync.returnBorrower()
 			pass
 		else:
 			DatabaseSync.neatPrint(message)
@@ -104,7 +111,7 @@ def getConstraints():
 	listOfConstraints.append(yearConstraint)
 	listOfConstraints.append(intRConstraint)
 
-def publishConstraints(constraints):
+def publishConstraints():
 	pubnub.publish().channel("Demo.1").message("Welcome to our loan application").pn_async(show)
 	time.sleep(1)
 	pubnub.publish().channel("Demo.1").message("The following are constraints for this auction:").pn_async(show)
@@ -113,7 +120,7 @@ def publishConstraints(constraints):
 	time.sleep(1)
 	pubnub.publish().channel("Demo.1").message("Loan constraints Year constraints Interest rate constraints").pn_async(show)
 	time.sleep(1)
-	pubnub.publish().channel("Demo.1").message("{} {} {}".format(constraints[0],constraints[1],constraints[2])).pn_async(show)
+	pubnub.publish().channel("Demo.1").message("{} {} {}".format(listOfConstraints[0],listOfConstraints[1],listOfConstraints[2])).pn_async(show)
 	time.sleep(1)
 	pubnub.publish().channel("Demo.1").message("End").pn_async(show)
 
@@ -130,9 +137,9 @@ borrowerCount = 0
 endCount = 0
 #3 constratis loan amount, year, interest rate
 listOfConstraints = []
-
+kArray = []
 getConstraints()
-publishConstraints(listOfConstraints)
+publishConstraints()
 
 sync = DatabaseSync()
 pubnub.add_listener(sync)

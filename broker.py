@@ -21,37 +21,63 @@ class DatabaseSync(SubscribeListener):
 
 	def returnBorrower():
 		flag = True
+		#Last array any random name ...
 		tiredArray = []
+		#since its an knapsack object I cant treat it as an normal array
 		for i in kArray:
+			#Just to print the [0] index, which is the amount yield after loaning
 			if flag:
 				print("Broker will yield {} amount after borrower repay".format(i))
 				flag = False
 			else:
+				#Loops through all accepted simple interest amounts, corresponds to 1 request per borrower
 				for j in i:
+					#array append in the following format
+					#	[username/borrower, entire loan request object [loan amount, years, interest rate]]
 					tiredArray.append([finalLoanRequest[j][0],borrowerDict[finalLoanRequest[j][0]][finalLoanRequest[j][1]]])
-					
+		
+		#Publish Final event for borrower					
 		pubnub.publish().channel("Demo.1").message("Final").pn_async(show)
+		#Publish array
 		pubnub.publish().channel("Demo.1").message(tiredArray).pn_async(show)
 
 	def knapSacking():
-		#creating neccessary variables
+		#Creating neccessary variables
+		#The loan amount borrowers request
 		weight = []
+		#Simple interest amount after the loan amount gives using the formula
 		value = []
+		#The loan constraint the maximum amount to borrow
 		capacity = listOfConstraints[0]
 
 		for borrower in finalLoanRequest:
+			#Extracting borrower key
+			#Using borrower key to find loan request
+			#Using the loan request to find loan amount
+			#Appends that value into weight
 			weight.append(borrowerDict[borrower[0]][borrower[1]][0])
+			#Appends amount after simple interest of the above weight amount performed on the loan request0
 			value.append(borrower[2])
 		
 		print("Knapsack solution returns:")
 		global kArray
+		#Perform knapsack
 		kArray = knapsack.knapsack(weight, value).solve(capacity)
 
+	#Takes all simple interest amount calculated
+	#And returns 1 per borrower
+	#eg highest value per borrower
 	def sortLoan():
 		global finalLoanRequest
+		#Basically looping through each borrower in the dictonary after Simple Interest
 		for key in cleanLoanRequest:
+			#Per borrower action
+			#Finds max Simple Interest
 			maxValueLoanRequest = max(cleanLoanRequest[key])
+			#Finds index of max simple interest
 			indexOfMaxValue = cleanLoanRequest[key].index(maxValueLoanRequest)
+			#Append an array to0 finalLoanArray, with the following format
+			#	[borrower/key, package number/index, max loan request amount]
 			finalLoanRequest.append([key,indexOfMaxValue,maxValueLoanRequest])
 		print(finalLoanRequest)
 
@@ -65,15 +91,23 @@ class DatabaseSync(SubscribeListener):
 				else:
 					cleanLoanRequest[key].append(valueSI)
 
+	#Adds to borrower dictionary
+	#Borrower username is key
+	#Loan request object in format of:
+	#	[Loan Amount, Year, Interest Rate]
 	def addToList(self):
 		global borrowerDict
 		global borrowerCount
-
+		#If message is not blank and message is not End
 		if self.Data.message != None and self.Data.message != "End":
+			#If key not in dictonary
 			if self.Data.message[0] not in borrowerDict:
+				#Increments borrower
 				borrowerCount += 1
+				#Add username as key with loan request object
 				borrowerDict[self.Data.message[0]] = [[self.Data.message[1],self.Data.message[2],self.Data.message[3]]]
 			else:
+				#Appends loan request object to the borrower with the key
 				borrowerDict[self.Data.message[0]].append([self.Data.message[1],self.Data.message[2],self.Data.message[3]])
 
 	def checkStatus(message):
@@ -89,7 +123,6 @@ class DatabaseSync(SubscribeListener):
 				DatabaseSync.sortLoan()
 				DatabaseSync.knapSacking()
 				DatabaseSync.returnBorrower()
-			pass
 		else:
 			DatabaseSync.neatPrint(message)
 

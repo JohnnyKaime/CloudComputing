@@ -36,9 +36,10 @@ class DatabaseSync(SubscribeListener):
 					#	[username/borrower, entire loan request object [loan amount, years, interest rate]]
 					tiredArray.append([finalLoanRequest[j][0],borrowerDict[finalLoanRequest[j][0]][finalLoanRequest[j][1]]])
 		
-		#Publish Final event for borrower					
+		#Publish Final event for borrower				
 		pubnub.publish().channel("Demo.1").message("Final").pn_async(show)
 		#Publish array
+		time.sleep(1)
 		pubnub.publish().channel("Demo.1").message(tiredArray).pn_async(show)
 
 	def knapSacking():
